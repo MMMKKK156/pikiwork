@@ -1,937 +1,1211 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>旅のしおり (旅遊手帳)</title>
-    <!-- Vue 3 -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <!-- Leaflet CSS & JS (地圖功能) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <!-- 字體 -->
-    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --bg-color: #FDFBF7;
-            --primary: #6A8372;
-            --primary-light: #E6EBE7;
-            --accent: #DFA89B;
-            --text-main: #464646;
-            --text-light: #8A8A8A;
-            --card-bg: #FFFFFF;
-            --border: #E8E6E1;
-            --shadow: 0 4px 20px rgba(106, 131, 114, 0.08);
-            --radius: 16px;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>任務圈 — 工作進度追蹤</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #4CAF50;
+    --green-light: #E8F5E9;
+    --green-dark: #2E7D32;
+    --amber: #FF9800;
+    --amber-light: #FFF3E0;
+    --amber-dark: #E65100;
+    --blue: #2196F3;
+    --blue-light: #E3F2FD;
+    --teal: #009688;
+    --teal-light: #E0F2F1;
+    --pink: #E91E63;
+    --pink-light: #FCE4EC;
+    --purple: #9C27B0;
+    --purple-light: #F3E5F5;
+    --coral: #FF5722;
+    --bg: #F7F4EE;
+    --surface: #FFFFFF;
+    --surface2: #F0EDE6;
+    --text: #2C2416;
+    --text2: #6B5F4E;
+    --text3: #A8998A;
+    --border: #E8E2D8;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-xs: 6px;
+  }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        html, body { height: 100%; overflow-x: hidden; }
-        body { 
-            font-family: 'Zen Maru Gothic', -apple-system, sans-serif; 
-            background: var(--bg-color); 
-            color: var(--text-main);
-            letter-spacing: 0.03em;
-        }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .app { max-width: 500px; margin: 0 auto; min-height: 100vh; position: relative; background: var(--bg-color); }
-        
-        .header {
-            background-color: var(--bg-color);
-            padding: 30px 24px 20px;
-            text-align: center;
-        }
-        
-        .trip-badge {
-            display: inline-block;
-            background: var(--primary);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            margin-bottom: 12px;
-            letter-spacing: 1px;
-        }
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
 
-        .header h1 { font-size: 28px; margin-bottom: 8px; font-weight: 700; color: var(--text-main); }
-        .header p { font-size: 14px; color: var(--text-light); font-weight: 500; }
-        
-        .weather-info {
-            margin-top: 20px;
-            background: rgba(255, 255, 255, 0.6);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 12px 20px;
-            display: inline-flex;
-            align-items: center;
-            gap: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-        }
-        .weather-temp { font-size: 24px; font-weight: 700; color: var(--primary); }
-        .weather-desc { font-size: 13px; color: var(--text-light); }
+  /* TOP HEADER */
+  .app-header {
+    background: linear-gradient(135deg, #2E7D32 0%, #388E3C 50%, #43A047 100%);
+    padding: 20px 24px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(46,125,50,0.3);
+  }
 
-        .tabs { 
-            display: flex; justify-content: center; padding: 0 5px; margin-bottom: 20px;
-            background: rgba(253, 251, 247, 0.95);
-            position: sticky; top: 0; z-index: 99;
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-        .tab { 
-            flex: 1; padding: 16px 2px; border: none; background: none; 
-            font-size: 14px; cursor: pointer; color: #999; 
-            transition: all 0.3s; font-weight: 500; position: relative; white-space: nowrap;
-        }
-        .tab.active { color: var(--primary); font-weight: 700; }
-        .tab.active::after {
-            content: ''; position: absolute; bottom: 6px; left: 50%;
-            transform: translateX(-50%); width: 6px; height: 6px;
-            background: var(--accent); border-radius: 50%;
-        }
-        
-        .content { padding: 0 20px 120px 20px; }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 900px;
+    margin: 0 auto;
+  }
 
-        .card {
-            background: var(--card-bg);
-            border-radius: var(--radius);
-            padding: 20px;
-            margin-bottom: 16px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        /* 登機證樣式 */
-        .flight-card {
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            margin-bottom: 20px;
-            overflow: hidden;
-            position: relative;
-            box-shadow: var(--shadow);
-        }
-        .flight-header {
-            background: var(--primary);
-            color: white;
-            padding: 10px 15px;
-            font-size: 13px;
-            font-weight: 700;
-            display: flex; justify-content: space-between;
-        }
-        .flight-body { padding: 15px; }
-        .flight-route { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
-        .flight-code { font-size: 24px; font-weight: 700; color: var(--text-main); }
-        .flight-label { font-size: 11px; color: #999; margin-bottom: 2px; }
-        .flight-val { font-size: 14px; font-weight: 500; }
-        .flight-plane { color: var(--accent); font-size: 20px; transform: rotate(90deg); }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
 
-        .day-slider { display: flex; overflow-x: auto; gap: 12px; margin-bottom: 24px; padding: 4px; -webkit-overflow-scrolling: touch; }
-        .day-slider::-webkit-scrollbar { display: none; }
-        .day-btn { 
-            min-width: 64px; height: 80px; border-radius: 30px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            background: white; border: 1px solid var(--border); color: var(--text-light);
-            cursor: pointer; flex-shrink: 0; transition: all 0.3s; 
-        }
-        .day-btn.active { 
-            background: var(--primary); color: white; border-color: var(--primary); 
-            transform: translateY(-4px); box-shadow: 0 8px 16px rgba(106, 131, 114, 0.25);
-        }
-        
-        .item-card {
-            background: white; border-radius: var(--radius); padding: 0;
-            margin-bottom: 16px; border: 1px solid var(--border); box-shadow: var(--shadow);
-            overflow: hidden; display: flex; transition: transform 0.2s;
-        }
-        .item-card:active { transform: scale(0.99); }
-        
-        .item-time-col {
-            padding: 18px 12px; background: var(--primary-light);
-            display: flex; flex-direction: column; align-items: center;
-            min-width: 70px; border-right: 1px dashed var(--border);
-        }
-        .item-time { font-size: 14px; font-weight: 700; color: var(--primary); }
-        
-        .item-main { padding: 16px; flex: 1; }
-        .item-title { font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
-        .item-loc { font-size: 12px; color: var(--text-light); display: flex; align-items: center; gap: 4px; cursor: pointer; }
-        .item-loc:hover { color: var(--primary); }
-        
-        .tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-top: 8px; display: inline-block; }
-        .tag.景點 { background: #E3F2FD; color: #5C88AA; }
-        .tag.美食 { background: #FCE4EC; color: #AA5C76; }
-        .tag.購物 { background: #FFF8E1; color: #AA8D5C; }
-        .tag.交通 { background: #F1F8E9; color: #6D8E58; }
+  .logo-icon {
+    font-size: 28px;
+    animation: sway 3s ease-in-out infinite;
+  }
 
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 30px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: inherit; }
-        .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(106, 131, 114, 0.3); }
-        .btn-add-small { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 13px; }
-        .btn-link { font-size: 12px; color: var(--primary); background: #eee; padding: 4px 10px; border-radius: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; margin-right: 6px; }
+  @keyframes sway {
+    0%, 100% { transform: rotate(-5deg); }
+    50% { transform: rotate(5deg); }
+  }
 
-        .translate-btn {
-            background: white; border: 1px solid var(--border); border-radius: 20px; padding: 20px;
-            display: flex; align-items: center; justify-content: space-between; text-decoration: none;
-            color: var(--text-main); box-shadow: var(--shadow); margin-bottom: 12px;
-        }
-        .translate-btn strong { display: block; font-size: 18px; margin-bottom: 4px; color: var(--primary); }
-        .translate-btn span { font-size: 13px; color: #999; }
-        .translate-icon { font-size: 32px; opacity: 0.8; }
-        
-        .app-btn { background: linear-gradient(135deg, #4285F4, #34A853); color: white; border: none; }
-        .app-btn strong { color: white; }
-        .app-btn span { color: rgba(255,255,255,0.8); }
+  .logo-text {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 22px;
+    color: #fff;
+    letter-spacing: 0.02em;
+  }
 
-        .data-btn { background: white; border: 1px solid var(--border); padding: 12px; border-radius: 12px; color: var(--text-light); font-size: 14px; cursor: pointer; text-align: center; flex: 1; }
-        .member-tag { background: #eee; padding: 4px 12px; border-radius: 20px; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  .logo-sub {
+    font-size: 11px;
+    color: rgba(255,255,255,0.75);
+    font-weight: 400;
+    letter-spacing: 0.05em;
+  }
 
-        #embedded-map { width: 100%; height: 100%; border-radius: var(--radius); z-index: 1; }
-        .map-container { height: 60vh; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); border: 4px solid white; position: relative; }
-        .map-loading { position: absolute; inset: 0; background: #f0f0f0; display: flex; align-items: center; justify-content: center; z-index: 2; color: #999; font-size: 14px; }
+  .header-stats {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
 
-        .input { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 12px; margin-top: 6px; font-size: 15px; background: #fdfdfd; font-family: inherit; }
-        .input:focus { outline: none; border-color: var(--primary); background: white; }
-        .modal { background: rgba(70, 70, 70, 0.4); backdrop-filter: blur(2px); }
-        .modal-content { border-radius: 24px 24px 0 0; background: #FDFBF7; }
-        
-        .flex { display: flex; gap: 10px; }
-        .flex-1 { flex: 1; }
-        .text-center { text-align: center; }
-        .mb-15 { margin-bottom: 15px; }
-        .icon-btn { width: 32px; height: 32px; border: none; background: transparent; color: #aaa; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-        .settle-arrow { color: var(--accent); font-weight: bold; margin: 0 8px; }
-    </style>
+  .stat-pill {
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: #fff;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* MAIN LAYOUT */
+  .main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 16px 80px;
+  }
+
+  /* ADD PROJECT BTN */
+  .add-project-btn {
+    width: 100%;
+    background: var(--surface);
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 14px;
+    color: var(--text3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+    margin-bottom: 20px;
+  }
+
+  .add-project-btn:hover {
+    border-color: var(--green);
+    color: var(--green-dark);
+    background: var(--green-light);
+  }
+
+  /* PROJECT CARD */
+  .project-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: box-shadow 0.2s;
+  }
+
+  .project-card:hover {
+    box-shadow: var(--shadow-lg);
+  }
+
+  .project-header {
+    padding: 18px 20px 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    position: relative;
+  }
+
+  .project-emoji {
+    font-size: 30px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  .project-info {
+    flex: 1;
+  }
+
+  .project-name {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 17px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .project-name input {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 17px;
+    color: var(--text);
+    border: none;
+    background: transparent;
+    outline: none;
+    width: 100%;
+  }
+
+  .project-desc {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 3px;
+  }
+
+  .project-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .progress-bar {
+    flex: 1;
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .progress-text {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text3);
+    min-width: 36px;
+    text-align: right;
+  }
+
+  .project-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .icon-btn {
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    color: var(--text3);
+  }
+
+  .icon-btn:hover { background: var(--surface2); }
+  .icon-btn.danger:hover { background: #FFEBEE; color: #C62828; }
+
+  .collapse-arrow {
+    transition: transform 0.25s;
+    font-size: 12px;
+  }
+
+  .collapsed .collapse-arrow { transform: rotate(-90deg); }
+
+  /* PHASES */
+  .phases-container {
+    padding: 0 16px 16px;
+  }
+
+  .phase-block {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: all 0.2s;
+  }
+
+  .phase-block.completed-phase {
+    border-color: #A5D6A7;
+    background: #F1F8E9;
+  }
+
+  .phase-block.active-phase {
+    border-color: var(--amber);
+    box-shadow: 0 0 0 2px rgba(255,152,0,0.15);
+  }
+
+  .phase-header {
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    background: inherit;
+  }
+
+  .phase-number {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+    font-family: 'Nunito', sans-serif;
+  }
+
+  .phase-number.done { background: var(--green); color: #fff; }
+  .phase-number.active { background: var(--amber); color: #fff; }
+  .phase-number.pending { background: var(--surface2); color: var(--text3); }
+
+  .phase-title-wrap {
+    flex: 1;
+  }
+
+  .phase-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .phase-title input {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text);
+    border: none;
+    background: transparent;
+    outline: none;
+    font-family: 'Noto Sans TC', sans-serif;
+    width: 100%;
+  }
+
+  .phase-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .phase-badge.done-badge { background: var(--green-light); color: var(--green-dark); }
+  .phase-badge.active-badge { background: var(--amber-light); color: var(--amber-dark); }
+  .phase-badge.pending-badge { background: var(--surface2); color: var(--text3); }
+
+  .phase-progress-mini {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 2px;
+  }
+
+  /* REWARD BLOCK */
+  .reward-strip {
+    margin: 0 14px 12px;
+    padding: 10px 14px;
+    border-radius: var(--radius-xs);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1.5px dashed;
+  }
+
+  .reward-strip.earned {
+    background: linear-gradient(135deg, #FFF8E1, #FFFDE7);
+    border-color: #FFD54F;
+  }
+
+  .reward-strip.locked {
+    background: var(--surface2);
+    border-color: var(--border);
+  }
+
+  .reward-icon { font-size: 20px; }
+
+  .reward-content { flex: 1; }
+
+  .reward-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 2px;
+  }
+
+  .reward-strip.earned .reward-label { color: #F57F17; }
+  .reward-strip.locked .reward-label { color: var(--text3); }
+
+  .reward-text {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .reward-strip.earned .reward-text { color: var(--text); }
+  .reward-strip.locked .reward-text { color: var(--text2); }
+
+  .reward-edit-btn {
+    font-size: 13px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text3);
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+
+  .reward-edit-btn:hover { background: rgba(0,0,0,0.06); color: var(--text); }
+
+  .reward-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 14px 12px;
+  }
+
+  .reward-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1.5px solid var(--amber);
+    border-radius: var(--radius-xs);
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 13px;
+    outline: none;
+    background: var(--amber-light);
+  }
+
+  .reward-save-btn {
+    padding: 8px 14px;
+    background: var(--amber);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-xs);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+
+  /* TASKS */
+  .tasks-list {
+    padding: 0 14px 8px;
+  }
+
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--radius-xs);
+    transition: background 0.15s;
+    position: relative;
+  }
+
+  .task-item:hover { background: var(--surface2); }
+
+  .task-check {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    background: var(--surface);
+    font-size: 11px;
+    color: transparent;
+  }
+
+  .task-check.checked {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+    animation: checkPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes checkPop {
+    0% { transform: scale(0.7); }
+    100% { transform: scale(1); }
+  }
+
+  .task-text {
+    flex: 1;
+    font-size: 13.5px;
+    color: var(--text);
+    line-height: 1.4;
+    transition: all 0.2s;
+  }
+
+  .task-text.done {
+    text-decoration: line-through;
+    color: var(--text3);
+  }
+
+  .task-text input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 13.5px;
+    color: var(--text);
+    outline: none;
+  }
+
+  .task-del {
+    opacity: 0;
+    font-size: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text3);
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+
+  .task-item:hover .task-del { opacity: 1; }
+  .task-del:hover { background: #FFEBEE; color: #C62828; }
+
+  .add-task-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px 4px;
+    margin: 0 4px 4px;
+  }
+
+  .add-task-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    padding: 6px 4px;
+    border-bottom: 1.5px solid var(--border);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .add-task-input:focus { border-color: var(--green); }
+
+  .add-task-input::placeholder { color: var(--text3); }
+
+  .add-task-btn {
+    font-size: 18px;
+    background: var(--green-light);
+    border: none;
+    color: var(--green-dark);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .add-task-btn:hover { background: var(--green); color: #fff; }
+
+  .add-phase-btn {
+    width: 100%;
+    background: transparent;
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    font-size: 13px;
+    color: var(--text3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: 'Noto Sans TC', sans-serif;
+    transition: all 0.2s;
+    margin-top: 4px;
+  }
+
+  .add-phase-btn:hover { border-color: var(--amber); color: var(--amber-dark); background: var(--amber-light); }
+
+  /* CELEBRATION OVERLAY */
+  .celebration {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .reward-popup {
+    background: var(--surface);
+    border-radius: 20px;
+    padding: 28px 32px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    text-align: center;
+    animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: auto;
+    max-width: 320px;
+    width: 90%;
+    border: 2px solid #FFD700;
+  }
+
+  @keyframes popIn {
+    from { transform: scale(0.6) translateY(20px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+  }
+
+  .popup-emoji { font-size: 52px; margin-bottom: 12px; }
+  .popup-title {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 20px;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .popup-phase { font-size: 13px; color: var(--text2); margin-bottom: 14px; }
+
+  .popup-reward {
+    background: linear-gradient(135deg, #FFF8E1, #FFFDE7);
+    border: 1.5px solid #FFD54F;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 18px;
+  }
+
+  .popup-reward-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #F57F17;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+
+  .popup-reward-text {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .popup-close {
+    padding: 10px 24px;
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    transition: transform 0.15s, background 0.15s;
+  }
+
+  .popup-close:hover { background: var(--green-dark); transform: scale(1.03); }
+
+  /* CONFETTI */
+  .confetti-piece {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    pointer-events: none;
+    z-index: 9998;
+    border-radius: 2px;
+  }
+
+  /* EMOJI PICKER */
+  .emoji-picker {
+    position: absolute;
+    top: 50px;
+    left: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    width: 200px;
+    z-index: 200;
+  }
+
+  .emoji-option {
+    font-size: 22px;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .emoji-option:hover { background: var(--surface2); }
+
+  /* COLOR DOTS for project */
+  .color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* PHASE COLOR STRIPE */
+  .phase-stripe {
+    width: 4px;
+    border-radius: 2px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text3);
+  }
+
+  .empty-state .empty-icon { font-size: 64px; margin-bottom: 16px; }
+  .empty-state h3 { font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 18px; color: var(--text2); margin-bottom: 8px; }
+  .empty-state p { font-size: 13px; line-height: 1.7; }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 480px) {
+    .header-stats { display: none; }
+    .main { padding: 16px 12px 80px; }
+  }
+</style>
 </head>
 <body>
-    <div id="app" class="app">
-        <!-- Header -->
-        <div class="header">
-            <div class="trip-badge" v-if="tripTitle">{{ tripTitle }}</div>
-            <div v-if="!editingHeader" v-on:click="startEditHeader" style="cursor: pointer;">
-                <h1>{{ tripTitle || '東京之旅' }}</h1>
-                <p>📅 {{ tripDates || '點擊設定日期' }}</p>
-                <div v-if="weather.loaded" class="weather-info">
-                    <div v-html="weather.icon" style="color: var(--accent);"></div>
-                    <div style="text-align: left;">
-                        <div class="weather-temp">{{ weather.temp }}°C</div>
-                        <div class="weather-desc">{{ weather.description }}</div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Header 編輯模式 -->
-            <div v-if="editingHeader" style="background: white; padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-top: 10px; position: relative; z-index: 100;">
-                <select v-model="tripTitle" class="input" style="margin-bottom: 10px;" @change="autoSetCurrency">
-                    <option value="">選擇城市</option>
-                    <option value="東京">🇯🇵 東京 (JPY)</option>
-                    <option value="大阪">🇯🇵 大阪 (JPY)</option>
-                    <option value="京都">🇯🇵 京都 (JPY)</option>
-                    <option value="首爾">🇰🇷 首爾 (KRW)</option>
-                    <option value="曼谷">🇹🇭 曼谷 (THB)</option>
-                    <option value="台北">🇹🇼 台北 (TWD)</option>
-                    <option value="倫敦">🇬🇧 倫敦 (EUR)</option>
-                    <option value="巴黎">🇫🇷 巴黎 (EUR)</option>
-                    <option value="紐約">🇺🇸 紐約 (USD)</option>
-                </select>
-                <div class="flex">
-                    <div class="flex-1">
-                        <div style="font-size: 12px; color: #999; margin-bottom: 4px;">開始</div>
-                        <input v-model="startDate" type="date" class="input">
-                    </div>
-                    <div class="flex-1">
-                        <div style="font-size: 12px; color: #999; margin-bottom: 4px;">結束</div>
-                        <input v-model="endDate" type="date" class="input">
-                    </div>
-                </div>
-                <div class="flex" style="margin-top: 15px;">
-                    <button v-on:click="cancelHeaderEdit" class="btn" style="background: #eee; color: #666;">取消</button>
-                    <button v-on:click="saveHeaderEdit" class="btn btn-primary">確定</button>
-                </div>
-            </div>
+<div class="celebration" id="celebration" style="display:none;">
+  <div class="reward-popup" id="rewardPopup">
+    <div class="popup-emoji" id="popupEmoji">🎉</div>
+    <div class="popup-title">階段完成！</div>
+    <div class="popup-phase" id="popupPhase">第一階段</div>
+    <div class="popup-reward">
+      <div class="popup-reward-label">🏆 你的獎勵</div>
+      <div class="popup-reward-text" id="popupReward">獎勵內容</div>
+    </div>
+    <button class="popup-close" onclick="closeReward()">✨ 繼續加油！</button>
+  </div>
+</div>
+
+<div class="app-header">
+  <div class="header-top">
+    <div class="logo">
+      <span class="logo-icon">🌱</span>
+      <div>
+        <div class="logo-text">任務圈</div>
+        <div class="logo-sub">MISSION CIRCLE</div>
+      </div>
+    </div>
+    <div class="header-stats">
+      <div class="stat-pill">🗂 <span id="totalProjects">0</span> 個專案</div>
+      <div class="stat-pill">✅ <span id="totalDone">0</span> 任務完成</div>
+      <div class="stat-pill">🏆 <span id="totalRewards">0</span> 獎勵解鎖</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <button class="add-project-btn" onclick="addProject()">
+    ＋ 新增專案
+  </button>
+  <div id="projectList"></div>
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon">🌿</div>
+    <h3>還沒有任何專案</h3>
+    <p>點擊上方「新增專案」<br>把你的工作拆解成皮克敏式的任務圈！</p>
+  </div>
+</div>
+
+<script>
+const EMOJIS = ['📋','🎯','💼','📚','🔬','🎨','💡','🚀','📊','📝','🏗','🌟','🔧','📣','🎪','🌈','⚡','🎓','🎭','🌸'];
+const COLORS = ['#4CAF50','#FF9800','#2196F3','#9C27B0','#E91E63','#009688','#FF5722','#607D8B','#795548','#FFC107'];
+
+let data = JSON.parse(localStorage.getItem('missionCircle') || '{"projects":[]}');
+let activeEmojiPicker = null;
+
+function save() {
+  localStorage.setItem('missionCircle', JSON.stringify(data));
+  updateStats();
+}
+
+function updateStats() {
+  let totalTasks = 0, doneTasks = 0, unlockedRewards = 0;
+  data.projects.forEach(p => {
+    p.phases.forEach(ph => {
+      ph.tasks.forEach(t => {
+        totalTasks++;
+        if (t.done) doneTasks++;
+      });
+      if (phaseComplete(ph) && ph.reward) unlockedRewards++;
+    });
+  });
+  document.getElementById('totalProjects').textContent = data.projects.length;
+  document.getElementById('totalDone').textContent = doneTasks;
+  document.getElementById('totalRewards').textContent = unlockedRewards;
+  document.getElementById('emptyState').style.display = data.projects.length === 0 ? 'block' : 'none';
+}
+
+function phaseComplete(ph) {
+  return ph.tasks.length > 0 && ph.tasks.every(t => t.done);
+}
+
+function projectProgress(p) {
+  let total = 0, done = 0;
+  p.phases.forEach(ph => { ph.tasks.forEach(t => { total++; if (t.done) done++; }); });
+  return total === 0 ? 0 : Math.round(done / total * 100);
+}
+
+function uid() { return Math.random().toString(36).slice(2, 9); }
+
+function addProject() {
+  const proj = {
+    id: uid(),
+    name: '新專案',
+    emoji: EMOJIS[Math.floor(Math.random() * EMOJIS.length)],
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    collapsed: false,
+    phases: [{ id: uid(), name: '第一階段', reward: '完成後給自己一杯手搖！☕', tasks: [], rewardEditing: false }]
+  };
+  data.projects.unshift(proj);
+  save();
+  render();
+  // auto focus name
+  setTimeout(() => {
+    const el = document.querySelector(`[data-pid="${proj.id}"] .project-name-input`);
+    if (el) { el.focus(); el.select(); }
+  }, 80);
+}
+
+function deleteProject(pid) {
+  if (!confirm('確定要刪除這個專案嗎？')) return;
+  data.projects = data.projects.filter(p => p.id !== pid);
+  save(); render();
+}
+
+function toggleProject(pid) {
+  const p = data.projects.find(x => x.id === pid);
+  if (p) { p.collapsed = !p.collapsed; save(); render(); }
+}
+
+function addPhase(pid) {
+  const p = data.projects.find(x => x.id === pid);
+  if (!p) return;
+  const n = p.phases.length + 1;
+  p.phases.push({ id: uid(), name: `第${['一','二','三','四','五','六','七','八','九','十'][n-1] || n}階段`, reward: '', tasks: [], rewardEditing: false });
+  save(); render();
+}
+
+function deletePhase(pid, phid) {
+  const p = data.projects.find(x => x.id === pid);
+  if (!p) return;
+  p.phases = p.phases.filter(ph => ph.id !== phid);
+  save(); render();
+}
+
+function addTask(pid, phid, text) {
+  const p = data.projects.find(x => x.id === pid);
+  const ph = p && p.phases.find(x => x.id === phid);
+  if (!ph || !text.trim()) return;
+  ph.tasks.push({ id: uid(), text: text.trim(), done: false });
+  save(); render();
+}
+
+function toggleTask(pid, phid, tid) {
+  const p = data.projects.find(x => x.id === pid);
+  const ph = p && p.phases.find(x => x.id === phid);
+  const t = ph && ph.tasks.find(x => x.id === tid);
+  if (!t) return;
+  t.done = !t.done;
+  save();
+
+  // check if phase just completed
+  if (t.done && phaseComplete(ph)) {
+    setTimeout(() => showReward(p, ph), 300);
+  } else {
+    render();
+  }
+}
+
+function deleteTask(pid, phid, tid) {
+  const p = data.projects.find(x => x.id === pid);
+  const ph = p && p.phases.find(x => x.id === phid);
+  if (!ph) return;
+  ph.tasks = ph.tasks.filter(t => t.id !== tid);
+  save(); render();
+}
+
+function showReward(proj, phase) {
+  launchConfetti();
+  document.getElementById('popupEmoji').textContent = proj.emoji;
+  document.getElementById('popupPhase').textContent = `《${proj.name}》 ${phase.name}`;
+  document.getElementById('popupReward').textContent = phase.reward || '🎊 太棒了！繼續保持！';
+  document.getElementById('celebration').style.display = 'flex';
+  render();
+}
+
+function closeReward() {
+  document.getElementById('celebration').style.display = 'none';
+}
+
+function launchConfetti() {
+  const colors = ['#FFD700','#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8'];
+  for (let i = 0; i < 60; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.cssText = `
+      left: ${Math.random() * 100}vw;
+      top: -10px;
+      background: ${colors[Math.floor(Math.random() * colors.length)]};
+      transform: rotate(${Math.random() * 360}deg);
+      border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+    `;
+    document.body.appendChild(el);
+    const dur = 1500 + Math.random() * 1500;
+    const x = (Math.random() - 0.5) * 200;
+    el.animate([
+      { transform: `translateX(0) translateY(0) rotate(0deg)`, opacity: 1 },
+      { transform: `translateX(${x}px) translateY(${window.innerHeight + 20}px) rotate(${Math.random() * 720}deg)`, opacity: 0 }
+    ], { duration: dur, easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)' }).onfinish = () => el.remove();
+  }
+}
+
+function getPhaseStatus(ph, phases, idx) {
+  if (phaseComplete(ph)) return 'done';
+  for (let i = 0; i < idx; i++) { if (!phaseComplete(phases[i])) return 'pending'; }
+  return 'active';
+}
+
+function render() {
+  const list = document.getElementById('projectList');
+  list.innerHTML = data.projects.map(p => renderProject(p)).join('');
+  attachEvents();
+  updateStats();
+}
+
+function renderProject(p) {
+  const prog = projectProgress(p);
+  const progColor = prog === 100 ? '#4CAF50' : prog > 50 ? '#FF9800' : '#2196F3';
+  return `
+  <div class="project-card" data-pid="${p.id}" ${p.collapsed ? 'class="project-card collapsed"' : ''}>
+    <div class="project-header" data-toggle="${p.id}">
+      <span class="project-emoji" data-emoji-trigger="${p.id}">${p.emoji}</span>
+      <div class="project-info">
+        <div class="project-name">
+          <input class="project-name-input" value="${escHtml(p.name)}" placeholder="專案名稱"
+            data-field="name" data-pid="${p.id}" onclick="event.stopPropagation()">
         </div>
-
-        <!-- Tabs -->
-        <div class="tabs">
-            <button class="tab" :class="{active: tab==='plan'}" @click="tab='plan'">行程</button>
-            <button class="tab" :class="{active: tab==='map'}" @click="switchTab('map')">地圖</button>
-            <button class="tab" :class="{active: tab==='money'}" @click="tab='money'">分帳</button>
-            <button class="tab" :class="{active: tab==='todo'}" @click="tab='todo'">清單</button>
-            <button class="tab" :class="{active: tab==='translate'}" @click="tab='translate'">翻譯</button>
+        <div class="project-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${prog}%;background:${progColor}"></div>
+          </div>
+          <span class="progress-text" style="color:${progColor}">${prog}%</span>
         </div>
+      </div>
+      <div class="project-controls" onclick="event.stopPropagation()">
+        <button class="icon-btn" title="新增階段" data-add-phase="${p.id}">＋</button>
+        <button class="icon-btn danger" title="刪除專案" data-del-project="${p.id}">🗑</button>
+        <span class="collapse-arrow" style="color:var(--text3);${p.collapsed ? 'transform:rotate(-90deg)' : ''}">▼</span>
+      </div>
+    </div>
+    ${!p.collapsed ? `<div class="phases-container">${p.phases.map((ph, idx) => renderPhase(p, ph, idx)).join('')}
+    <button class="add-phase-btn" data-add-phase="${p.id}">＋ 新增階段</button>
+    </div>` : ''}
+  </div>`;
+}
 
-        <!-- 內容區 -->
-        <div class="content">
-            <!-- 1. 行程 Tab -->
-            <div v-if="tab==='plan'">
-                
-                <!-- 航班按鈕/卡片區 -->
-                <div style="margin-bottom: 20px;">
-                    <button v-if="!showFlightCard" @click="showFlightCard=true" class="btn" style="background: white; border: 1px dashed var(--primary); color: var(--primary); padding: 10px;">
-                        + 設定航班資訊
-                    </button>
-                    
-                    <div v-if="showFlightCard" class="flight-card">
-                        <div class="flight-header">
-                            <span>✈️ FLIGHT TICKET</span>
-                            <span @click="showFlightEdit=true" style="cursor: pointer;">✏️ 編輯</span>
-                        </div>
-                        <div class="flight-body">
-                            <!-- 去程 -->
-                            <div class="flight-route">
-                                <div>
-                                    <div class="flight-code">{{ flights.in.from || 'TPE' }}</div>
-                                    <div class="flight-val">{{ flights.in.time || '00:00' }}</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="flight-label">{{ flights.in.date || 'Date' }}</div>
-                                    <div class="flight-plane">✈</div>
-                                    <div class="flight-label">{{ flights.in.no || 'Flight No.' }}</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="flight-code">{{ flights.in.to || 'DST' }}</div>
-                                    <div class="flight-val">{{ flights.in.terminal ? 'T'+flights.in.terminal : '-' }}</div>
-                                </div>
-                            </div>
-                            <div style="height: 1px; background: #eee; margin: 10px 0;"></div>
-                            <!-- 回程 -->
-                            <div class="flight-route" style="margin-bottom: 0;">
-                                <div>
-                                    <div class="flight-code">{{ flights.out.from || 'DST' }}</div>
-                                    <div class="flight-val">{{ flights.out.time || '00:00' }}</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="flight-label">{{ flights.out.date || 'Date' }}</div>
-                                    <div class="flight-plane" style="transform: rotate(-90deg);">✈</div>
-                                    <div class="flight-label">{{ flights.out.no || 'Flight No.' }}</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="flight-code">{{ flights.out.to || 'TPE' }}</div>
-                                    <div class="flight-val">{{ flights.out.terminal ? 'T'+flights.out.terminal : '-' }}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+function renderPhase(p, ph, idx) {
+  const status = getPhaseStatus(ph, p.phases, idx);
+  const total = ph.tasks.length;
+  const done = ph.tasks.filter(t => t.done).length;
+  const numClass = { done: 'done', active: 'active', pending: 'pending' }[status];
+  const badgeClass = { done: 'done-badge', active: 'active-badge', pending: 'pending-badge' }[status];
+  const badgeText = { done: '✓ 完成', active: '進行中', pending: '待解鎖' }[status];
+  const blockClass = { done: 'completed-phase', active: 'active-phase', pending: '' }[status];
+  const earned = status === 'done';
 
-                <div class="day-slider" v-if="days.length > 0">
-                    <div v-for="(d,i) in days" :key="i" class="day-btn" :class="{active: di===i}" @click="di=i">
-                        <span style="font-size: 12px; opacity: 0.8;">{{ d.weekday }}</span>
-                        <span style="font-size: 18px; font-weight: 700;">{{ getDayNumber(d.d) }}</span>
-                    </div>
-                    <div class="day-btn" @click="addDay" style="opacity: 0.5;">
-                        <span style="font-size: 20px;">+</span>
-                    </div>
-                </div>
-
-                <div v-if="days[di]" class="card" style="padding: 15px; display: flex; align-items: center; justify-content: space-between; border-left: 4px solid var(--accent);">
-                    <div>
-                        <div style="font-size: 12px; color: var(--text-light);">Day {{ di+1 }} · {{ days[di].d }}</div>
-                        <input v-model="days[di].t" @change="saveData" class="input" style="border:none; padding: 0; font-size: 18px; font-weight: 700; margin: 5px 0 0 0; background: transparent; width: auto;" placeholder="輸入當日主題...">
-                    </div>
-                    <button @click="deleteDay(di)" class="icon-btn" style="color: #E57373;">✖</button>
-                </div>
-
-                <div v-if="!days[di] || days[di].items.length===0" class="text-center" style="padding: 60px 0; color: #ccc;">
-                    <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">✏️</div>
-                    <p>今天還沒有安排行程</p>
-                </div>
-
-                <div v-if="days[di]">
-                    <div v-for="(item, i) in days[di].items" :key="i" class="item-card">
-                        <div class="item-time-col">
-                            <span class="item-time">{{ item.time }}</span>
-                            <div style="width: 1px; flex: 1; background: #ccc; margin-top: 8px; border-right: 1px dashed #ccc;"></div>
-                        </div>
-                        <div class="item-main">
-                            <div style="display: flex; justify-content: space-between; align-items: start;">
-                                <div>
-                                    <div class="item-title">{{ item.name }}</div>
-                                    <!-- 導航功能 -->
-                                    <div v-if="item.location" class="item-loc" @click="openGoogleMap(item.location)">
-                                        <span style="color: var(--accent);">📍</span>
-                                        {{ item.location }} 
-                                        <span style="font-size: 10px; color: var(--primary); margin-left: 4px;">(導航)</span>
-                                    </div>
-                                    <div class="tag" :class="item.category">{{ item.category }}</div>
-                                </div>
-                                <div class="flex" style="gap: 2px;">
-                                    <button @click="editItem(i)" class="icon-btn">✎</button>
-                                    <button @click="delItem(i)" class="icon-btn">✖</button>
-                                </div>
-                            </div>
-                            <!-- 備註與連結 -->
-                            <div v-if="item.note" style="margin-top: 8px; font-size: 13px; color: #666; background: #F9F9F9; padding: 8px; border-radius: 8px; white-space: pre-wrap;">{{ item.note }}</div>
-                            <div v-if="item.links && item.links.length > 0" style="margin-top: 6px;">
-                                <a v-for="(link, lIdx) in item.links" :key="lIdx" :href="link.url" target="_blank" class="btn-link">
-                                    🔗 {{ link.name }}
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <button class="btn btn-primary" @click="showAdd=true">+ 新增行程</button>
-            </div>
-
-            <!-- 2. 地圖 Tab -->
-            <div v-show="tab==='map'" style="height: 100%;">
-                <div class="map-container">
-                    <div id="embedded-map"></div>
-                    <div v-if="mapLoading" class="map-loading">
-                        <div>🗺️ 地圖載入中...</div>
-                    </div>
-                </div>
-                <div style="margin-top: 15px;">
-                    <h3 style="font-size: 16px; margin-bottom: 10px; font-weight: 700; color: var(--primary);">📍 地點列表</h3>
-                    <div style="display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto;">
-                        <div v-for="(loc, idx) in allLocations" :key="idx" 
-                             @click="flyToLocation(loc)"
-                             style="background: white; padding: 12px; border-radius: 12px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
-                            <div>
-                                <div style="font-weight: 700; font-size: 14px;">{{ loc.name }}</div>
-                                <div style="font-size: 12px; color: #999;">{{ loc.day }}</div>
-                            </div>
-                            <div v-if="loc.lat" style="color: var(--primary); font-size: 12px;">已定位</div>
-                            <div v-else style="color: var(--accent); font-size: 12px;">搜尋中...</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 3. 分帳 Tab (多幣別升級版) -->
-            <div v-if="tab==='money'">
-                <div class="card" style="border-left: 4px solid var(--primary);">
-                    <h3 style="font-size: 16px; margin-bottom: 15px;">👥 成員設定</h3>
-                    <div class="flex" style="flex-wrap: wrap; margin-bottom: 15px;">
-                        <div v-for="(m, idx) in members" :key="m" class="member-tag">
-                            {{ m }} <span v-if="members.length > 1" @click="removeMember(idx)" style="cursor: pointer; color: #999; margin-left: 4px;">×</span>
-                        </div>
-                    </div>
-                    <div class="flex">
-                        <input v-model="newMemberName" class="input" style="margin:0;" placeholder="輸入名字..." @keyup.enter="addMember">
-                        <button @click="addMember" class="btn-add-small" style="width: auto;">新增</button>
-                    </div>
-                </div>
-
-                <!-- 結算建議 (多幣別) -->
-                <div v-if="exps.length > 0" class="card" style="background: #FFF8F0; border-color: #F8E8D0;">
-                    <h3 style="font-size: 16px; margin-bottom: 15px; color: #8B6B4E;">🧮 結算建議 (依幣別)</h3>
-                    <div v-if="Object.keys(multiCurrencySettlement).length === 0" style="color: #999; font-size: 14px;">目前帳目平衡。</div>
-                    
-                    <div v-for="(plans, cur) in multiCurrencySettlement" :key="cur" style="margin-bottom: 15px;">
-                        <div style="font-size: 12px; color: #8B6B4E; font-weight: bold; margin-bottom: 5px; background: rgba(139, 107, 78, 0.1); display: inline-block; padding: 2px 8px; border-radius: 4px;">
-                            {{ cur }} 結算
-                        </div>
-                        <div v-for="(s, idx) in plans" :key="idx" style="padding: 5px 0; display: flex; align-items: center; justify-content: space-between; font-size: 14px;">
-                            <div>
-                                {{ s.from }} <span class="settle-arrow">⮕</span> {{ s.to }}
-                            </div>
-                            <div style="font-weight: 700;">{{ s.amount }} <span style="font-size:10px;">{{ cur }}</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 style="font-size: 16px; font-weight: 700;">支出紀錄</h3>
-                    <button class="btn-add-small" @click="openExpenseForm">+ 記帳</button>
-                </div>
-
-                <div v-if="exps.length===0" class="text-center" style="padding: 40px 0; color: #ccc;">無支出紀錄</div>
-
-                <div v-for="(e, i) in exps" :key="i" class="card" style="padding: 15px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-size: 15px; font-weight: 700;">{{ e.desc }}</div>
-                        <div style="font-size: 12px; color: #999;">{{ e.by }} 先付 · 分給 {{ e.split.join(', ') }}</div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="font-size: 16px; font-weight: 700; color: var(--primary);">{{ e.amt }}</div>
-                        <div style="font-size: 11px; color: #aaa;">{{ e.cur }}</div>
-                    </div>
-                    <button @click="delExp(i)" class="icon-btn" style="margin-left: 10px; color: #e57373;">×</button>
-                </div>
-            </div>
-            
-            <!-- 4. 清單 Tab -->
-            <div v-if="tab==='todo'">
-                 <div class="card">
-                    <h3 style="font-size: 16px; margin-bottom: 15px;">📝 待辦事項</h3>
-                    <div class="flex" style="margin-bottom: 15px;">
-                        <input v-model="newTodo" @keyup.enter="addTodo" class="input" style="margin:0;" placeholder="新增待辦...">
-                        <button @click="addTodo" class="btn-add-small">新增</button>
-                    </div>
-                    <div v-for="(t, i) in todos" :key="i" style="padding: 10px 0; border-bottom: 1px dashed #eee; display: flex; align-items: center;">
-                        <input type="checkbox" v-model="t.done" @change="saveData" style="margin-right: 10px; width: 18px; height: 18px; accent-color: var(--primary);">
-                        <span :style="{textDecoration: t.done?'line-through':'none', color: t.done?'#ccc':'#444', flex:1}">{{ t.text }}</span>
-                        <button @click="todos.splice(i,1);saveData()" class="icon-btn" style="width:24px; height:24px;">×</button>
-                    </div>
-                </div>
-
-                <div class="card" style="border-left: 4px solid var(--accent);">
-                    <h3 style="font-size: 16px; margin-bottom: 15px;">🧳 行李打包清單</h3>
-                    <div class="flex" style="margin-bottom: 15px;">
-                        <input v-model="newPackingItem" @keyup.enter="addPackingItem" class="input" style="margin:0;" placeholder="例: 護照、轉接頭...">
-                        <button @click="addPackingItem" class="btn-add-small" style="background: var(--accent);">新增</button>
-                    </div>
-                    <div v-for="(t, i) in packingList" :key="i" style="padding: 10px 0; border-bottom: 1px dashed #eee; display: flex; align-items: center;">
-                        <input type="checkbox" v-model="t.done" @change="saveData" style="margin-right: 10px; width: 18px; height: 18px; accent-color: var(--accent);">
-                        <span :style="{textDecoration: t.done?'line-through':'none', color: t.done?'#ccc':'#444', flex:1}">{{ t.text }}</span>
-                        <button @click="packingList.splice(i,1);saveData()" class="icon-btn" style="width:24px; height:24px;">×</button>
-                    </div>
-                </div>
-
-                <div class="card" style="margin-top: 30px; border-color: #eee;">
-                    <h3 style="font-size: 16px; margin-bottom: 15px; color: var(--text-light);">💾 資料備份</h3>
-                    <div class="flex">
-                        <button @click="doExport" class="data-btn" style="background: #fcfcfc;">📤 匯出</button>
-                        <button @click="triggerImport" class="data-btn" style="background: #fcfcfc;">📥 匯入</button>
-                         <button @click="clearAllData" class="data-btn" style="color: #E57373; border-color: #ffdcdc; background: #fff5f5;">🗑️ 清空</button>
-                    </div>
-                    <input type="file" id="importFile" accept=".json" style="display: none;" @change="importData">
-                </div>
-            </div>
-
-            <!-- 5. 翻譯 Tab -->
-            <div v-if="tab==='translate'">
-                <div class="text-center" style="margin-bottom: 20px;">
-                    <h2 style="font-size: 20px; color: var(--primary); margin-bottom: 5px;">Google 翻譯捷徑</h2>
-                    <p style="font-size: 13px; color: #999;">目標語言：{{ getTargetLangName() }}</p>
-                </div>
-                <div style="margin-bottom: 20px;">
-                     <div style="font-size: 12px; color: var(--primary); font-weight: bold; margin-bottom: 8px; margin-left: 5px;">⚡ 極速模式 (直接開啟 App)</div>
-                     <button @click="openNativeApp('translate')" class="translate-btn app-btn">
-                        <div><span>使用手機內建 App</span><strong>開啟 Google 翻譯</strong></div>
-                        <div class="translate-icon">🚀</div>
-                    </button>
-                </div>
-                <div style="font-size: 12px; color: #999; font-weight: bold; margin-bottom: 8px; margin-left: 5px;">🌐 網頁版 (免安裝)</div>
-                <a :href="'https://translate.google.com/?sl=' + getTranslateCode() + '&tl=zh-TW&op=images'" target="_blank" class="translate-btn">
-                    <div><span>瀏覽器開啟</span><strong>照相翻譯 (網頁)</strong></div>
-                    <div class="translate-icon" style="color: var(--accent);">📷</div>
-                </a>
-                <a :href="'https://translate.google.com/?sl=zh-TW&tl=' + getTranslateCode() + '&op=translate'" target="_blank" class="translate-btn">
-                    <div><span>瀏覽器開啟</span><strong>中文 ⮕ {{ getTargetLangName() }}</strong></div>
-                    <div class="translate-icon">🗣️</div>
-                </a>
-            </div>
+  return `
+  <div class="phase-block ${blockClass}">
+    <div class="phase-header">
+      <div class="phase-number ${numClass}">${status === 'done' ? '✓' : idx + 1}</div>
+      <div class="phase-title-wrap">
+        <div class="phase-title">
+          <input value="${escHtml(ph.name)}" placeholder="階段名稱"
+            data-field="phasename" data-pid="${p.id}" data-phid="${ph.id}"
+            onclick="event.stopPropagation()">
         </div>
-
-        <!-- 行程 Modal (新增連結/備註功能) -->
-        <div v-if="showAdd" class="modal" style="position:fixed; inset:0; z-index:1000; display:flex; align-items:flex-end;" @click.self="showAdd=false">
-            <div class="modal-content" style="width:100%; padding: 24px; max-height: 85vh; overflow-y: auto;">
-                <h3 style="margin-bottom: 20px;">{{ editIdx!==null?'編輯行程':'新增行程' }}</h3>
-                <div class="mb-15">
-                    <label style="font-size: 12px; color: #999;">時間</label>
-                    <div class="flex">
-                        <select v-model="form.h" class="input flex-1"><option v-for="h in 24" :value="pad(h-1)">{{ pad(h-1) }}</option></select>
-                        <select v-model="form.m" class="input flex-1"><option v-for="m in ['00','15','30','45']" :value="m">{{ m }}</option></select>
-                    </div>
-                </div>
-                <input v-model="form.name" class="input mb-15" placeholder="行程名稱 (例: 淺草寺)">
-                <input v-model="form.location" class="input mb-15" placeholder="地點 (導航用，例: Asakusa)">
-                <div class="flex mb-15">
-                    <button v-for="c in ['景點','美食','購物','交通']" :key="c" @click="form.category=c" 
-                            class="btn" :style="{padding:'8px', fontSize:'13px', background: form.category===c?'var(--primary)':'#eee', color: form.category===c?'white':'#666'}">{{ c }}</button>
-                </div>
-                <!-- 詳細備註 -->
-                <label style="font-size: 12px; color: #999;">詳細備註</label>
-                <textarea v-model="form.note" class="input mb-15" placeholder="可輸入交通方式、餐廳訂位號碼、營業時間..." style="height: 100px;"></textarea>
-                
-                <!-- 附件連結區 -->
-                <div class="mb-15" style="background: #f8f8f8; padding: 10px; border-radius: 12px;">
-                    <label style="font-size: 12px; color: #999;">附件連結 (電子票券/PDF網址)</label>
-                    <div v-for="(l, idx) in form.links" :key="idx" class="flex" style="margin-top: 5px;">
-                        <input v-model="l.name" class="input" style="flex:1; margin:0; font-size:12px;" placeholder="名稱 (例: 門票)">
-                        <input v-model="l.url" class="input" style="flex:2; margin:0; font-size:12px;" placeholder="https://...">
-                        <button @click="form.links.splice(idx,1)" class="icon-btn" style="color: #e57373;">×</button>
-                    </div>
-                    <button @click="form.links.push({name:'', url:''})" class="btn-link" style="margin-top: 8px; border:1px dashed #ccc; background:white;">+ 新增連結</button>
-                </div>
-
-                <button @click="saveAdd" class="btn btn-primary">儲存</button>
-            </div>
-        </div>
-        
-        <!-- 航班 Modal -->
-        <div v-if="showFlightEdit" class="modal" style="position:fixed; inset:0; z-index:1000; display:flex; align-items:flex-end;" @click.self="showFlightEdit=false">
-            <div class="modal-content" style="width:100%; padding: 24px;">
-                <h3 style="margin-bottom: 20px;">編輯航班資訊</h3>
-                <div style="font-size: 12px; font-weight: bold; color: var(--primary); margin-bottom: 10px;">去程 (Inbound)</div>
-                <div class="flex mb-15"><input v-model="flights.in.date" class="input" placeholder="日期"><input v-model="flights.in.time" class="input" placeholder="時間"></div>
-                <div class="flex mb-15"><input v-model="flights.in.from" class="input" placeholder="出發 (TPE)"><input v-model="flights.in.to" class="input" placeholder="抵達 (NRT)"></div>
-                <div class="flex mb-15"><input v-model="flights.in.no" class="input" placeholder="班次 (JX800)"><input v-model="flights.in.terminal" class="input" placeholder="航廈"></div>
-                
-                <div style="height:1px; background:#eee; margin: 20px 0;"></div>
-                
-                <div style="font-size: 12px; font-weight: bold; color: var(--primary); margin-bottom: 10px;">回程 (Outbound)</div>
-                <div class="flex mb-15"><input v-model="flights.out.date" class="input" placeholder="日期"><input v-model="flights.out.time" class="input" placeholder="時間"></div>
-                <div class="flex mb-15"><input v-model="flights.out.from" class="input" placeholder="出發"><input v-model="flights.out.to" class="input" placeholder="抵達"></div>
-                <div class="flex mb-15"><input v-model="flights.out.no" class="input" placeholder="班次"><input v-model="flights.out.terminal" class="input" placeholder="航廈"></div>
-                
-                <button @click="saveFlight" class="btn btn-primary">儲存</button>
-            </div>
-        </div>
-
-        <!-- 支出 Modal -->
-        <div v-if="showExpAdd" class="modal" style="position:fixed; inset:0; z-index:1000; display:flex; align-items:flex-end;" @click.self="showExpAdd=false">
-            <div class="modal-content" style="width:100%; padding: 24px;">
-                <h3 style="margin-bottom: 20px;">新增支出</h3>
-                <input v-model="expForm.desc" class="input mb-15" placeholder="項目 (例: 拉麵)">
-                <div class="flex mb-15">
-                    <input v-model.number="expForm.amt" type="number" class="input" placeholder="金額">
-                    <select v-model="expForm.cur" class="input" style="margin-top:6px;">
-                        <option :value="targetCurrency">{{ targetCurrency }}</option>
-                        <option value="TWD">TWD</option>
-                        <option value="USD">USD</option>
-                    </select>
-                </div>
-                <div class="mb-15">
-                    <div style="font-size:12px; color:#999; margin-bottom:5px;">誰付的</div>
-                    <div class="flex" style="flex-wrap:wrap; gap:8px;">
-                        <button v-for="m in members" :key="m" @click="expForm.by=m" class="btn" style="width:auto;" :style="{padding:'8px 12px', background: expForm.by===m?'var(--primary)':'#eee', color: expForm.by===m?'white':'#666'}">{{ m }}</button>
-                    </div>
-                </div>
-                 <div class="mb-15">
-                    <div style="font-size:12px; color:#999; margin-bottom:5px;">分給誰</div>
-                    <div class="flex" style="flex-wrap: wrap;">
-                         <label v-for="m in members" :key="'s'+m" style="padding: 8px 12px; background: #f5f5f5; border-radius: 20px; font-size: 13px; display:flex; align-items:center; gap:6px;">
-                             <input type="checkbox" :value="m" v-model="expForm.split"> {{ m }}
-                         </label>
-                    </div>
-                </div>
-                <button @click="saveExp" class="btn btn-primary">儲存</button>
-            </div>
-        </div>
+        <div class="phase-progress-mini">${total === 0 ? '尚無任務' : `${done} / ${total} 項完成`}</div>
+      </div>
+      <span class="phase-badge ${badgeClass}">${badgeText}</span>
+      ${p.phases.length > 1 ? `<button class="icon-btn danger" style="margin-left:4px" data-del-phase="${p.id}|${ph.id}">✕</button>` : ''}
     </div>
 
-    <script>
-        const { createApp, ref, computed, nextTick } = Vue;
+    ${ph.rewardEditing ? `
+    <div class="reward-input-wrap">
+      <input class="reward-input" id="ri_${ph.id}" value="${escHtml(ph.reward)}" placeholder="完成這階段的獎勵是...">
+      <button class="reward-save-btn" data-save-reward="${p.id}|${ph.id}">儲存</button>
+    </div>` : `
+    <div class="reward-strip ${earned ? 'earned' : 'locked'}">
+      <span class="reward-icon">${earned ? '🏆' : '🔒'}</span>
+      <div class="reward-content">
+        <div class="reward-label">${earned ? '已解鎖獎勵' : '完成階段後解鎖'}</div>
+        <div class="reward-text">${ph.reward || '點擊鉛筆設定你的獎勵...'}</div>
+      </div>
+      <button class="reward-edit-btn" data-edit-reward="${p.id}|${ph.id}">✏️</button>
+    </div>`}
 
-        createApp({
-            setup() {
-                const tab = ref('plan');
-                const di = ref(0);
-                const tripTitle = ref('');
-                const tripDates = ref('');
-                const startDate = ref('');
-                const endDate = ref('');
-                const targetCurrency = ref('JPY');
-                const days = ref([]);
-                const members = ref(['我', '旅伴']);
-                const exps = ref([]);
-                const todos = ref([]);
-                const packingList = ref([]);
-                
-                // 航班資訊
-                const showFlightCard = ref(false);
-                const showFlightEdit = ref(false);
-                const flights = ref({
-                    in: { date:'', time:'', from:'', to:'', no:'', terminal:'' },
-                    out: { date:'', time:'', from:'', to:'', no:'', terminal:'' }
-                });
+    <div class="tasks-list">
+      ${ph.tasks.map(t => `
+      <div class="task-item">
+        <div class="task-check ${t.done ? 'checked' : ''}" data-toggle-task="${p.id}|${ph.id}|${t.id}">${t.done ? '✓' : ''}</div>
+        <span class="task-text ${t.done ? 'done' : ''}">${escHtml(t.text)}</span>
+        <button class="task-del" data-del-task="${p.id}|${ph.id}|${t.id}">✕</button>
+      </div>`).join('')}
+    </div>
+    <div class="add-task-row">
+      <input class="add-task-input" placeholder="新增任務..." data-new-task="${p.id}|${ph.id}">
+      <button class="add-task-btn" data-submit-task="${p.id}|${ph.id}">＋</button>
+    </div>
+  </div>`;
+}
 
-                const editingHeader = ref(false);
-                const showAdd = ref(false);
-                const showExpAdd = ref(false);
-                const editIdx = ref(null);
-                const newMemberName = ref('');
-                
-                const form = ref({ h:'09', m:'00', name:'', location:'', category:'景點', note:'', links:[] });
-                const expForm = ref({ desc:'', amt:'', cur:'JPY', by:'', split:[] });
-                
-                const weather = ref({ loaded: false, temp: 0, description: '', icon: '' });
-                const map = ref(null);
-                const mapLoading = ref(true);
-                const markers = ref({});
-                const locationCache = ref({});
+function escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
-                const pad = (n) => String(n).padStart(2, '0');
-                const getDayNumber = (dStr) => dStr ? (dStr.split('/').length > 2 ? dStr.split('/')[2] : dStr) : '';
+function attachEvents() {
+  // Toggle project
+  document.querySelectorAll('[data-toggle]').forEach(el => {
+    el.addEventListener('click', e => {
+      if (e.target.closest('[data-field]') || e.target.closest('[data-del-project]') || e.target.closest('[data-add-phase]') || e.target.closest('[data-emoji-trigger]')) return;
+      toggleProject(el.dataset.toggle);
+    });
+  });
 
-                // 導航功能
-                const openGoogleMap = (loc) => {
-                    const q = `${tripTitle.value} ${loc}`;
-                    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank');
-                };
+  // Emoji picker
+  document.querySelectorAll('[data-emoji-trigger]').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      closeEmojiPicker();
+      const pid = el.dataset.emojiTrigger;
+      const picker = document.createElement('div');
+      picker.className = 'emoji-picker';
+      picker.innerHTML = EMOJIS.map(em => `<div class="emoji-option" data-em="${em}">${em}</div>`).join('');
+      picker.querySelectorAll('.emoji-option').forEach(o => {
+        o.addEventListener('click', () => {
+          const p = data.projects.find(x => x.id === pid);
+          if (p) { p.emoji = o.dataset.em; save(); render(); }
+          closeEmojiPicker();
+        });
+      });
+      el.closest('.project-header').style.position = 'relative';
+      el.closest('.project-header').appendChild(picker);
+      activeEmojiPicker = picker;
+      setTimeout(() => document.addEventListener('click', closeEmojiPicker, { once: true }), 50);
+    });
+  });
 
-                // 多幣別結算邏輯
-                const multiCurrencySettlement = computed(() => {
-                    if (exps.value.length === 0) return {};
-                    
-                    // 1. 整理出所有出現過的幣別
-                    const currencies = [...new Set(exps.value.map(e => e.cur))];
-                    const results = {};
+  // Field inputs
+  document.querySelectorAll('[data-field="name"]').forEach(el => {
+    el.addEventListener('input', () => {
+      const p = data.projects.find(x => x.id === el.dataset.pid);
+      if (p) { p.name = el.value; save(); updateStats(); }
+    });
+  });
 
-                    currencies.forEach(cur => {
-                        let balances = {};
-                        members.value.forEach(m => balances[m] = 0);
+  document.querySelectorAll('[data-field="phasename"]').forEach(el => {
+    el.addEventListener('input', () => {
+      const p = data.projects.find(x => x.id === el.dataset.pid);
+      const ph = p && p.phases.find(x => x.id === el.dataset.phid);
+      if (ph) { ph.name = el.value; save(); }
+    });
+  });
 
-                        // 2. 只計算該幣別的帳
-                        const curExps = exps.value.filter(e => e.cur === cur);
-                        if (curExps.length === 0) return;
+  // Add phase
+  document.querySelectorAll('[data-add-phase]').forEach(el => {
+    el.addEventListener('click', e => { e.stopPropagation(); addPhase(el.dataset.addPhase); });
+  });
 
-                        curExps.forEach(e => {
-                            if (!e.split || e.split.length === 0) return;
-                            // 付款人 +
-                            if (balances[e.by] !== undefined) balances[e.by] += e.amt;
-                            // 分攤人 -
-                            let splitAmt = e.amt / e.split.length;
-                            e.split.forEach(person => {
-                                if (balances[person] !== undefined) balances[person] -= splitAmt;
-                            });
-                        });
+  // Del project
+  document.querySelectorAll('[data-del-project]').forEach(el => {
+    el.addEventListener('click', e => { e.stopPropagation(); deleteProject(el.dataset.delProject); });
+  });
 
-                        // 3. 結算該幣別
-                        let debtors = [];
-                        let creditors = [];
-                        for (let person in balances) {
-                            let amt = Math.round(balances[person] * 100) / 100; // 小數點處理
-                            if (amt < -0.1) debtors.push({ name: person, amt: amt }); 
-                            else if (amt > 0.1) creditors.push({ name: person, amt: amt }); 
-                        }
+  // Del phase
+  document.querySelectorAll('[data-del-phase]').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      const [pid, phid] = el.dataset.delPhase.split('|');
+      deletePhase(pid, phid);
+    });
+  });
 
-                        debtors.sort((a, b) => a.amt - b.amt);
-                        creditors.sort((a, b) => b.amt - a.amt);
+  // Toggle task
+  document.querySelectorAll('[data-toggle-task]').forEach(el => {
+    el.addEventListener('click', () => {
+      const [pid, phid, tid] = el.dataset.toggleTask.split('|');
+      toggleTask(pid, phid, tid);
+    });
+  });
 
-                        let plan = [];
-                        let i = 0; let j = 0;
-                        while (i < debtors.length && j < creditors.length) {
-                            let debt = Math.abs(debtors[i].amt);
-                            let credit = creditors[j].amt;
-                            let settleAmt = Math.min(debt, credit);
-                            
-                            if (settleAmt > 0) {
-                                plan.push({
-                                    from: debtors[i].name,
-                                    to: creditors[j].name,
-                                    amount: Math.round(settleAmt * 10) / 10
-                                });
-                            }
+  // Del task
+  document.querySelectorAll('[data-del-task]').forEach(el => {
+    el.addEventListener('click', () => {
+      const [pid, phid, tid] = el.dataset.delTask.split('|');
+      deleteTask(pid, phid, tid);
+    });
+  });
 
-                            debtors[i].amt += settleAmt;
-                            creditors[j].amt -= settleAmt;
-                            if (Math.abs(debtors[i].amt) < 0.1) i++;
-                            if (creditors[j].amt < 0.1) j++;
-                        }
-                        
-                        if (plan.length > 0) results[cur] = plan;
-                    });
+  // Add task input + button
+  document.querySelectorAll('[data-new-task]').forEach(el => {
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const [pid, phid] = el.dataset.newTask.split('|');
+        addTask(pid, phid, el.value);
+        el.value = '';
+      }
+    });
+  });
 
-                    return results;
-                });
+  document.querySelectorAll('[data-submit-task]').forEach(el => {
+    el.addEventListener('click', () => {
+      const [pid, phid] = el.dataset.submitTask.split('|');
+      const input = document.querySelector(`[data-new-task="${pid}|${phid}"]`);
+      if (input) { addTask(pid, phid, input.value); input.value = ''; input.focus(); }
+    });
+  });
 
-                const allLocations = computed(() => {
-                    let locs = [];
-                    days.value.forEach((d, dIdx) => {
-                        d.items.forEach(item => {
-                            if (item.location) {
-                                locs.push({ name: item.name, location: item.location, day: `Day ${dIdx+1}`, lat: item.lat, lon: item.lon });
-                            }
-                        });
-                    });
-                    return locs;
-                });
+  // Reward edit
+  document.querySelectorAll('[data-edit-reward]').forEach(el => {
+    el.addEventListener('click', () => {
+      const [pid, phid] = el.dataset.editReward.split('|');
+      const p = data.projects.find(x => x.id === pid);
+      const ph = p && p.phases.find(x => x.id === phid);
+      if (ph) { ph.rewardEditing = true; save(); render(); setTimeout(() => { const inp = document.getElementById('ri_' + phid); if (inp) { inp.focus(); inp.select(); } }, 60); }
+    });
+  });
 
-                const initData = () => {
-                    const saved = localStorage.getItem('jp_trip_data');
-                    if (saved) {
-                        try {
-                            const data = JSON.parse(saved);
-                            tripTitle.value = data.title;
-                            tripDates.value = data.dates;
-                            days.value = data.days || [];
-                            exps.value = data.exps || [];
-                            targetCurrency.value = data.currency || 'JPY';
-                            todos.value = data.todos || [];
-                            packingList.value = data.packingList || [];
-                            if (data.members) members.value = data.members;
-                            if (data.flights) {
-                                flights.value = data.flights;
-                                showFlightCard.value = true;
-                            }
-                            locationCache.value = data.locCache || {};
-                        } catch(e) {}
-                    } else {
-                        days.value = [{ d: '2025/01/01', weekday: 'WED', t: '', items: [] }];
-                    }
-                    if (tripTitle.value) fetchWeather(tripTitle.value);
-                };
+  document.querySelectorAll('[data-save-reward]').forEach(el => {
+    el.addEventListener('click', () => {
+      const [pid, phid] = el.dataset.saveReward.split('|');
+      const p = data.projects.find(x => x.id === pid);
+      const ph = p && p.phases.find(x => x.id === phid);
+      if (ph) {
+        const inp = document.getElementById('ri_' + phid);
+        if (inp) ph.reward = inp.value;
+        ph.rewardEditing = false;
+        save(); render();
+      }
+    });
+  });
+}
 
-                const saveData = () => {
-                    localStorage.setItem('jp_trip_data', JSON.stringify({
-                        title: tripTitle.value, dates: tripDates.value, days: days.value, exps: exps.value,
-                        currency: targetCurrency.value, todos: todos.value, packingList: packingList.value,
-                        members: members.value, flights: flights.value, locCache: locationCache.value
-                    }));
-                };
+function closeEmojiPicker() {
+  if (activeEmojiPicker) { activeEmojiPicker.remove(); activeEmojiPicker = null; }
+}
 
-                // Header & Currency
-                const startEditHeader = () => editingHeader.value = true;
-                const cancelHeaderEdit = () => editingHeader.value = false;
-                const saveHeaderEdit = () => {
-                    if(startDate.value && endDate.value) {
-                        tripDates.value = `${startDate.value} ~ ${endDate.value}`;
-                        generateDays();
-                    }
-                    editingHeader.value = false;
-                    fetchWeather(tripTitle.value);
-                    saveData();
-                };
-                const autoSetCurrency = () => {
-                   const cityMap = { '東京': 'JPY', '大阪': 'JPY', '京都': 'JPY', '首爾': 'KRW', '曼谷': 'THB', '台北': 'TWD', '倫敦': 'EUR', '巴黎': 'EUR', '紐約': 'USD' };
-                   if(cityMap[tripTitle.value]) targetCurrency.value = cityMap[tripTitle.value];
-                };
+// Init with sample data if empty
+if (data.projects.length === 0) {
+  data.projects = [{
+    id: uid(), name: '品格教育課程設計', emoji: '📚', color: '#4CAF50', collapsed: false,
+    phases: [
+      { id: uid(), name: '第一階段：資料蒐集', reward: '☕ 去喝一杯想喝很久的咖啡！', tasks: [
+        { id: uid(), text: '整理各年級品格指標文獻', done: true },
+        { id: uid(), text: '分析頭心手框架應用案例', done: true },
+        { id: uid(), text: '訪談三位資深老師', done: true },
+      ], rewardEditing: false },
+      { id: uid(), name: '第二階段：課程設計', reward: '🎬 週末看一部想看的電影！', tasks: [
+        { id: uid(), text: '撰寫三年級誠實主題教案', done: false },
+        { id: uid(), text: '設計可觀察行為指標', done: false },
+        { id: uid(), text: '完成學習目標對照表', done: false },
+      ], rewardEditing: false },
+      { id: uid(), name: '第三階段：試教與修訂', reward: '🛍 買一個一直想要的文具！', tasks: [
+        { id: uid(), text: '安排試教學校', done: false },
+        { id: uid(), text: '蒐集教師回饋', done: false },
+        { id: uid(), text: '修訂課程內容', done: false },
+      ], rewardEditing: false },
+    ]
+  }];
+  save();
+}
 
-                const generateDays = () => {
-                    const s = new Date(startDate.value);
-                    const e = new Date(endDate.value);
-                    const diffDays = Math.ceil(Math.abs(e - s) / (86400000)) + 1; 
-                    if (diffDays > 30) return;
-                    const newDays = [];
-                    const weekMap = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
-                    for(let i=0; i<diffDays; i++) {
-                        const d = new Date(s); d.setDate(d.getDate() + i);
-                        const dateStr = `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())}`;
-                        const oldItem = days.value[i] || {};
-                        newDays.push({ d: dateStr, weekday: weekMap[d.getDay()], t: oldItem.t || '', items: oldItem.items || [] });
-                    }
-                    days.value = newDays;
-                };
-
-                const addDay = () => { days.value.push({d: 'New Day', weekday: '-', t: '', items: []}); saveData(); };
-                const deleteDay = (idx) => { if(confirm('確定刪除？')) { days.value.splice(idx, 1); if(di.value >= days.value.length) di.value = Math.max(0, days.value.length - 1); saveData(); }};
-                
-                const editItem = (i) => {
-                    editIdx.value = i;
-                    const item = days.value[di.value].items[i];
-                    const [h, m] = item.time.split(':');
-                    // 確保 links 存在
-                    const links = item.links ? [...item.links] : [];
-                    form.value = { ...item, h, m, links };
-                    showAdd.value = true;
-                };
-                const delItem = (i) => { days.value[di.value].items.splice(i, 1); saveData(); };
-                const saveAdd = () => {
-                    const newItem = {
-                        time: `${form.value.h}:${form.value.m}`,
-                        name: form.value.name,
-                        location: form.value.location,
-                        category: form.value.category,
-                        note: form.value.note,
-                        links: form.value.links.filter(l => l.url)
-                    };
-                    if (editIdx.value !== null) days.value[di.value].items[editIdx.value] = newItem;
-                    else { days.value[di.value].items.push(newItem); days.value[di.value].items.sort((a,b) => a.time.localeCompare(b.time)); }
-                    showAdd.value = false; editIdx.value = null;
-                    form.value = { h:'09', m:'00', name:'', location:'', category:'景點', note:'', links:[] };
-                    saveData();
-                };
-
-                const saveFlight = () => { showFlightEdit.value = false; saveData(); };
-
-                const addMember = () => { if (newMemberName.value && !members.value.includes(newMemberName.value)) { members.value.push(newMemberName.value); newMemberName.value = ''; saveData(); }};
-                const removeMember = (idx) => { if (confirm('確定刪除？')) { members.value.splice(idx, 1); saveData(); }};
-
-                const openExpenseForm = () => { expForm.value = { desc:'', amt:'', cur: targetCurrency.value, by: members.value[0], split: [...members.value] }; showExpAdd.value = true; };
-                const saveExp = () => { if(!expForm.value.desc || !expForm.value.amt) return; exps.value.push({ ...expForm.value }); showExpAdd.value = false; saveData(); };
-                const delExp = (i) => { exps.value.splice(i, 1); saveData(); };
-
-                const newTodo = ref('');
-                const addTodo = () => { if(newTodo.value) { todos.value.push({text: newTodo.value, done: false}); newTodo.value = ''; saveData(); }};
-                const newPackingItem = ref('');
-                const addPackingItem = () => { if(newPackingItem.value) { packingList.value.push({text: newPackingItem.value, done: false}); newPackingItem.value = ''; saveData(); }};
-
-                const fetchWeather = async (city) => {
-                    if (!city) return;
-                    const map = { '東京': 'Tokyo', '大阪': 'Osaka', '台北': 'Taipei', '首爾': 'Seoul' };
-                    try {
-                        const res = await fetch(`https://wttr.in/${map[city]||city}?format=j1`);
-                        const data = await res.json();
-                        weather.value = { loaded: true, temp: data.current_condition[0].temp_C, description: data.current_condition[0].weatherDesc[0].value, icon: '🌤️' };
-                    } catch(e) {}
-                };
-
-                const getTranslateCode = () => ({ 'JPY': 'ja', 'USD': 'en', 'EUR': 'en', 'KRW': 'ko', 'THB': 'th', 'TWD': 'en' }[targetCurrency.value] || 'en');
-                const getTargetLangName = () => ({ 'JPY': '日文', 'USD': '英文', 'EUR': '歐語', 'KRW': '韓文', 'THB': '泰文', 'TWD': '外語' }[targetCurrency.value] || '外語');
-                const openNativeApp = () => { window.location.href = 'googletranslate://'; };
-
-                const doExport = () => {
-                    const blob = new Blob([JSON.stringify({ title: tripTitle.value, dates: tripDates.value, days: days.value, exps: exps.value, currency: targetCurrency.value, todos: todos.value, packingList: packingList.value, members: members.value, flights: flights.value, locCache: locationCache.value }, null, 2)], { type: 'application/json' });
-                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = (tripTitle.value || '行程') + '.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-                };
-                const triggerImport = () => document.getElementById('importFile').click();
-                const importData = (event) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        try {
-                            const data = JSON.parse(e.target.result);
-                            if(confirm('匯入將覆蓋現有行程，確定嗎？')) {
-                                Object.assign(days, {value: data.days||[]});
-                                tripTitle.value = data.title; tripDates.value = data.dates; exps.value = data.exps||[]; todos.value = data.todos||[]; packingList.value = data.packingList||[]; members.value = data.members||['我']; flights.value = data.flights||flights.value; locationCache.value = data.locCache||{};
-                                saveData(); alert('匯入成功');
-                            }
-                        } catch(err) { alert('格式錯誤'); }
-                    };
-                    reader.readAsText(event.target.files[0]);
-                    event.target.value = '';
-                };
-                const clearAllData = () => { if(confirm('清空資料？')) { localStorage.removeItem('jp_trip_data'); location.reload(); }};
-
-                const initMap = () => {
-                    if (map.value) return;
-                    map.value = L.map('embedded-map').setView([35.6895, 139.6917], 11);
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OSM & Carto', subdomains: 'abcd', maxZoom: 20 }).addTo(map.value);
-                    mapLoading.value = false;
-                    updateMapMarkers();
-                };
-                const geocodeLocation = async (query) => {
-                    if (locationCache.value[query]) return locationCache.value[query];
-                    try {
-                        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
-                        const data = await res.json();
-                        if (data && data.length > 0) {
-                            const result = { lat: data[0].lat, lon: data[0].lon };
-                            locationCache.value[query] = result; saveData(); return result;
-                        }
-                    } catch (e) {}
-                    return null;
-                };
-                const updateMapMarkers = async () => {
-                    if (!map.value) return;
-                    Object.values(markers.value).forEach(m => map.value.removeLayer(m));
-                    markers.value = {};
-                    const bounds = [];
-                    for (const d of days.value) {
-                        for (const item of d.items) {
-                            if (item.location) {
-                                let coords = item.lat && item.lon ? { lat: item.lat, lon: item.lon } : await geocodeLocation(`${tripTitle.value} ${item.location}`);
-                                if (coords) {
-                                    item.lat = coords.lat; item.lon = coords.lon;
-                                    const marker = L.marker([coords.lat, coords.lon]).addTo(map.value).bindPopup(`<b>${item.name}</b><br>${item.time}`);
-                                    markers.value[`${coords.lat},${coords.lon}`] = marker;
-                                    bounds.push([coords.lat, coords.lon]);
-                                }
-                            }
-                        }
-                    }
-                    if (bounds.length > 0) map.value.fitBounds(bounds, { padding: [50, 50] });
-                    saveData();
-                };
-                const switchTab = (t) => { tab.value = t; if (t === 'map') { nextTick(() => { initMap(); setTimeout(() => { map.value.invalidateSize(); }, 200); updateMapMarkers(); }); }};
-                const flyToLocation = (loc) => { if (loc.lat && loc.lon && map.value) { map.value.flyTo([loc.lat, loc.lon], 16); const key = `${loc.lat},${loc.lon}`; if (markers.value[key]) markers.value[key].openPopup(); } else { alert('搜尋中...'); updateMapMarkers(); }};
-
-                initData();
-
-                return {
-                    tab, di, days, tripTitle, tripDates, weather, editingHeader, startDate, endDate, startEditHeader, cancelHeaderEdit, saveHeaderEdit, autoSetCurrency,
-                    getDayNumber, addDay, deleteDay, showAdd, form, editIdx, editItem, delItem, saveAdd, openGoogleMap,
-                    targetCurrency, exps, showExpAdd, expForm, members, openExpenseForm, saveExp, delExp, multiCurrencySettlement,
-                    todos, newTodo, addTodo, packingList, newPackingItem, addPackingItem, saveData, switchTab, mapLoading, allLocations, flyToLocation, pad,
-                    getTranslateCode, getTargetLangName, doExport, triggerImport, importData, clearAllData, openNativeApp,
-                    flights, showFlightCard, showFlightEdit, saveFlight, addMember, removeMember, newMemberName
-                };
-            }
-        }).mount('#app');
-    </script>
+render();
+</script>
 </body>
 </html>
